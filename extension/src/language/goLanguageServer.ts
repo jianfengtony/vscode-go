@@ -68,6 +68,7 @@ import { GoDocumentSelector } from '../goMode';
 import { COMMAND as GOPLS_ADD_TEST_COMMAND } from '../goGenerateTests';
 import { COMMAND as GOPLS_MODIFY_TAGS_COMMAND } from '../goModifytags';
 import { TelemetryKey, telemetryReporter } from '../goTelemetry';
+import { TReferenceFeature } from './tReference';
 
 export interface LanguageServerConfig {
 	serverName: string;
@@ -348,6 +349,7 @@ export class GoLanguageClient extends LanguageClient implements vscode.Disposabl
 		private onDidChangeVulncheckResultEmitter: vscode.EventEmitter<VulncheckEvent>
 	) {
 		super(id, name, serverOptions, clientOptions);
+		this.registerFeature(new TReferenceFeature(this));
 	}
 
 	dispose(timeout?: number) {

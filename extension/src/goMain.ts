@@ -76,6 +76,7 @@ import { GoTaskProvider } from './goTaskProvider';
 import { setTelemetryEnvVars, activationLatency, telemetryReporter } from './goTelemetry';
 import { experiments } from './experimental';
 import { allToolsInformation } from './goToolsInformation';
+import { TTreeProvider } from './language/tReference';
 
 const goCtx: GoExtensionContext = {};
 
@@ -154,6 +155,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<ExtensionA
 	GoTestExplorer.setup(ctx, goCtx);
 	GoExplorerProvider.setup(ctx);
 	GoPackageOutlineProvider.setup(ctx);
+	TTreeProvider.setup(ctx);
 
 	goCtx.buildDiagnosticCollection = vscode.languages.createDiagnosticCollection('go');
 	ctx.subscriptions.push(goCtx.buildDiagnosticCollection);
