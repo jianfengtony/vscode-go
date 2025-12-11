@@ -75,6 +75,7 @@ import { experiments } from './experimental';
 import { extensionInfo, getGoConfig, getGoplsConfig, validateConfig } from './config';
 import { clearCacheForTools } from './utils/pathUtils';
 import { getFormatTool } from './language/legacy/goFormat';
+import { TTreeView } from './language/tReferences/treeview';
 
 const goCtx: GoExtensionContext = {};
 
@@ -153,6 +154,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<ExtensionA
 	GoTestExplorer.setup(ctx, goCtx);
 	GoExplorerProvider.setup(ctx);
 	GoPackageOutlineProvider.setup(ctx);
+	TTreeView.setup(ctx, goCtx.languageClient);
 
 	goCtx.buildDiagnosticCollection = vscode.languages.createDiagnosticCollection('go');
 	ctx.subscriptions.push(goCtx.buildDiagnosticCollection);
