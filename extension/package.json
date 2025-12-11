@@ -3821,6 +3821,11 @@
           "name": "Package Outline",
           "icon": "media/go-logo-white.svg",
           "when": "go.showPackageOutline"
+        },
+        {
+          "id": "go.FindAllReferences",
+          "name": "go: References",
+          "icon": "media/go-logo-white.svg"
         }
       ],
       "test": [
