@@ -1,7 +1,7 @@
 {
   "name": "go",
   "displayName": "Go",
-  "version": "0.50.0",
+  "version": "0.50.100",
   "publisher": "golang",
   "description": "Rich Go language support for Visual Studio Code",
   "author": {
@@ -374,6 +374,11 @@
         "description": "Toggle the per-package flag that causes compiler optimization details to be reported as diagnostics"
       },
       {
+        "command": "go.findAllReferences.findAll",
+        "title": "Go: Find All References",
+        "description": "Find all references"
+      },
+      {
         "command": "go.import.add",
         "title": "Go: Add Import",
         "description": "Add an import declaration"
@@ -397,6 +402,12 @@
         "command": "go.vulncheck.toggle",
         "title": "Go: Toggle Vulncheck",
         "description": "Toggle the display of vulnerability analysis in dependencies."
+      },
+      {
+        "command": "go.findAllReferences.expandAll",
+        "title": "Expand All",
+        "description": "Expand all nodes in the Find All References view",
+        "icon": "$(expand-all)"
       },
       {
         "command": "go.languageserver.maintain",
@@ -1750,6 +1761,11 @@
               "default": true,
               "description": "If true, adds command to generate unit tests for current package to the editor context menu"
             },
+            "findAllReferences": {
+              "type": "boolean",
+              "default": true,
+              "description": "If true, adds command to find all references to the editor context menu"
+            },
             "addImport": {
               "type": "boolean",
               "default": true,
@@ -1788,6 +1804,7 @@
             "generateTestForFunction": true,
             "generateTestForFile": false,
             "generateTestForPackage": false,
+            "findAllReferences": true,
             "addImport": true,
             "testCoverage": true,
             "playground": true,
@@ -3557,6 +3574,11 @@
           "group": "Go group 1"
         },
         {
+          "when": "editorTextFocus && config.go.editorContextMenuCommands.findAllReferences && resourceLangId == go",
+          "command": "go.findAllReferences.findAll",
+          "group": "Go group 1"
+        },
+        {
           "when": "editorTextFocus && config.go.editorContextMenuCommands.addImport && resourceLangId == go",
           "command": "go.import.add",
           "group": "Go group 1"
@@ -3599,6 +3621,11 @@
           "command": "go.explorer.refresh",
           "when": "view == go.explorer",
           "group": "navigation"
+        },
+        {
+          "command": "go.findAllReferences.expandAll",
+          "when": "view == go.findAllReferences",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -3635,6 +3662,13 @@
           "name": "Package Outline",
           "icon": "media/go-logo-white.svg",
           "when": "go.showPackageOutline"
+        },
+        {
+          "id": "go.findAllReferences",
+          "name": "References",
+          "icon": "$(group-by-ref-type)",
+          "when": "go.showAllReferences",
+          "contextualTitle": "Go"
         }
       ],
       "test": [

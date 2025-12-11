@@ -16,4 +16,48 @@
 	"[yaml]": {
 		"editor.autoIndent": "advanced"
 	},
+	"go.goroot": "/Volumes/Main-Thick/workspace/releases_go/go1.24",
+	"go.gopath": "/Volumes/Main-Thick/workspace/gopath/go1.24",
+	"go.testFlags": [
+		"-v",
+		"-count=1"
+	],
+	"go.toolsEnvVars": {
+		"GOPROXY": "https://goproxy.cn",
+		"GOCACHE": "/Volumes/Main-Thick/workspace/gocache",
+		//"GO111MODULE": "",
+		//"GONOSUMDB": "",
+	},
+	"terminal.integrated.env.linux": {
+		"GOROOT": "/Volumes/Main-Thick/workspace/releases_go/go1.24",
+		"GOPATH": "/Volumes/Main-Thick/workspace/gopath/go1.24",
+		"GOCACHE": "/Volumes/Main-Thick/workspace/gocache",
+		"GOPROXY": "https://goproxy.cn",
+		//"GO111MODULE": "",
+		//"GONOSUMDB": "",
+		"PATH": "/Volumes/Main-Thick/workspace/gopath/go1.24/bin:${env:PATH}",
+		"GO_TEST_TIMEOUT_SCALE": "2"
+	},
+	"terminal.integrated.env.osx": {
+		"GOROOT": "/Volumes/Main-Thick/workspace/releases_go/go1.24",
+		"GOPATH": "/Volumes/Main-Thick/workspace/gopath/go1.24",
+		"GOCACHE": "/Volumes/Main-Thick/workspace/gocache",
+		"GOPROXY": "https://goproxy.cn",
+		//"GO111MODULE": "",
+		//"GONOSUMDB": "",
+		"PATH": "/Volumes/Main-Thick/workspace/gopath/go1.24/bin:${env:PATH}",
+		"GO_TEST_TIMEOUT_SCALE": "2"
+	},
+	"gopls": {
+		"ui.semanticTokens": true
+	},
+	"go.inlayHints.assignVariableTypes": true,
+	"go.inlayHints.compositeLiteralFields": true,
+	"go.inlayHints.compositeLiteralTypes": true,
+	"go.inlayHints.constantValues": true,
+	"go.inlayHints.functionTypeParameters": true,
+	"go.inlayHints.ignoredError": true,
+	"go.inlayHints.parameterNames": true,
+	"go.inlayHints.rangeVariableTypes": true,
+	"editor.inlayHints.enabled": "offUnlessPressed"
 }
