@@ -20,8 +20,8 @@ export class TReferenceFeature extends ReferencesFeature {
 							return null;
 						}
 						return client.protocol2CodeConverter.asReferences(result, token).then((value) => {
-							for (const ref of value || []) {
-								console.log(` - ${ref.uri.toString()} [${ref.range.start.line + 1},${ref.range.start.character + 1}]`);
+							if (value) {
+								TTreeProvider.instance.refresh(TTreeItem.buildItems(value))
 							}
 							return value;
 						});
@@ -43,61 +43,121 @@ export class TReferenceFeature extends ReferencesFeature {
 	}
 }
 
-enum MyTreeNodeType {
-	File,
-	TopDeclare,
-	Reference
-}
+const itemClickCommand = 'go.RefencesItemClick';
 
-class MyTreeNode extends vscode.TreeItem {
-	// private type: MyTreeNodeType
-	constructor(label: string, uri: vscode.Uri, range: vscode.Range) {
-		super(label, vscode.TreeItemCollapsibleState.None);
-		this.command = {
-			command: 'tgo.itemClick',
-			title: 'Item Click',
-			arguments: [uri, range]
-		}
-	}
-}
+export class TTreeProvider implements vscode.TreeDataProvider<TTreeItem> {
+	private _onDidChangeTreeData: vscode.EventEmitter<TTreeItem | undefined | null | void> = new vscode.EventEmitter<TTreeItem | undefined | null | void>();
+	readonly onDidChangeTreeData: vscode.Event<TTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-export class MyTreeProvider implements vscode.TreeDataProvider<MyTreeNode> {
-	private _onDidChangeTreeData: vscode.EventEmitter<MyTreeNode | undefined | null | void> = new vscode.EventEmitter<MyTreeNode | undefined | null | void>();
-	readonly onDidChangeTreeData: vscode.Event<MyTreeNode | undefined | null | void> = this._onDidChangeTreeData.event;
+	private elements: TTreeItem[] = [];
 
-	private elements: MyTreeNode[] = [];
+	static instance: TTreeProvider;
 
 	static setup(ctx: vscode.ExtensionContext) {
-		ctx.subscriptions.push(vscode.window.registerTreeDataProvider('tgo.FindAllReferences', new this()));
-		ctx.subscriptions.push(vscode.commands.registerCommand('tgo.itemClick', (uri: vscode.Uri, range: vscode.Range) => {
+		let provider = new TTreeProvider();
+		ctx.subscriptions.push(vscode.window.registerTreeDataProvider('go.FindAllReferences', provider));
+		ctx.subscriptions.push(vscode.commands.registerCommand(itemClickCommand, (location: vscode.Location) => {
 			// 打开文件并跳转到指定行列
-			vscode.workspace.openTextDocument(uri).then(doc => {
+			vscode.workspace.openTextDocument(location.uri).then(doc => {
 				vscode.window.showTextDocument(doc).then(editor => {
 					// 设置选择范围并滚动到该行
-					editor.selection = new vscode.Selection(range.start, range.end);
-					editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+					editor.selection = new vscode.Selection(location.range.start, location.range.end);
+					editor.revealRange(location.range, vscode.TextEditorRevealType.InCenter);
 				});
 			});
 		}));
+		this.instance = provider;
 	}
 
-	getChildren(element?: MyTreeNode): vscode.ProviderResult<MyTreeNode[]> {
+	getChildren(element?: TTreeItem): vscode.ProviderResult<TTreeItem[]> {
 		if (!element) {
-			return Promise.resolve(this.elements);
+			return this.elements;
 		} else {
-			let nodes = []
-			nodes.push(new MyTreeNode('func detail 1', vscode.Uri.file('/path/to/file1'), new vscode.Range(0, 0, 0, 10)));
-			nodes.push(new MyTreeNode('func detail 2', vscode.Uri.file('/path/to/file2'), new vscode.Range(1, 0, 1, 10)));
-			return Promise.resolve(nodes);
+			return element.children;
 		}
 	}
 
-	getTreeItem(element: MyTreeNode): vscode.TreeItem | Thenable<vscode.TreeItem> {
+	getTreeItem(element: TTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
+		switch (element.level) {
+			case 0:
+				element.label = this.getRelativePathFromUri(element.location.uri);
+				break;
+			case 1:
+				const line = element.location.range.start.line + 1;
+				const character = element.location.range.start.character + 1;
+				element.label = `Line ${line}, Col ${character}`;
+				element.contextValue = 'reference';
+				break;
+		}
 		return element;
 	}
 
-	refresh(uri: vscode.Uri, position: vscode.Position): void {
-		this.elements = [];
+	refresh(elements: TTreeItem[]): void {
+		this.elements = elements;
 		this._onDidChangeTreeData.fire();
+	}
+
+	private getRelativePathFromUri(uri: vscode.Uri): string {
+		let workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+		if (workspaceFolder) {
+			return uri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+		}
+		return uri.fsPath;
+	}
+}
+
+class TTreeItem extends vscode.TreeItem {
+	level: number;
+	location: vscode.Location;
+	children: TTreeItem[] | undefined;
+
+	constructor(level: number, location: vscode.Location) {
+		super("unknown", vscode.TreeItemCollapsibleState.None);
+		this.level = level;
+		this.location = location
+		if (level === 1) {
+			this.command = {
+				command: itemClickCommand,
+				title: 'Item Click',
+				arguments: [location]
+			}
+		}
+	}
+
+	private addChild(item: TTreeItem) {
+		if (!this.children) {
+			this.children = [];
+		}
+		this.children.push(item);
+	}
+
+	static getElementWithSameFsPath(elements: TTreeItem[], fsPath: string): TTreeItem | undefined {
+		for (let el of elements) {
+			if (el.location.uri.fsPath === fsPath) {
+				return el;
+			}
+		}
+		return undefined;
+	}
+
+	static getBasenameFromUri(uri: vscode.Uri): string {
+		let parts = uri.fsPath.split(/\/|\\/);
+		return parts[parts.length - 1];
+	}
+
+	static buildItems(locations: vscode.Location[]): TTreeItem[] {
+		let elements: TTreeItem[] = [];
+
+		for (let loc of locations) {
+			let element = this.getElementWithSameFsPath(elements, loc.uri.fsPath);
+			if (!element) { // 创建顶层节点
+				element = new TTreeItem(0, loc);
+				element.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+				element.iconPath = vscode.Uri.file(vscode.extensions.getExtension('golang.go')!.extensionPath + '/media/go-logo-blue.png')
+				elements.push(element);
+			}
+			element.addChild(new TTreeItem(1, loc));
+		}
+		return elements;
 	}
 }
