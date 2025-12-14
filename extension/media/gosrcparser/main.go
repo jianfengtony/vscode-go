@@ -51,26 +51,47 @@ func main() {
 		case *ast.GenDecl:
 			switch decl.Tok {
 			case token.IMPORT:
-				info.DeclType = "import"
+				info.DeclType = "Import"
 			case token.CONST:
-				info.DeclType = "const"
+				info.DeclType = "Unclassified"
 			case token.TYPE:
-				info.DeclType = "type"
+				info.DeclType = "Type"
 				info.Name = decl.Specs[0].(*ast.TypeSpec).Name.Name
 			case token.VAR:
-				info.DeclType = "var"
+				info.DeclType = "Unclassified"
 				// info.Name = decl.Specs[1].(*ast.ValueSpec).Names[0].Name
 			default:
-				info.DeclType = "GenDecl"
+				info.DeclType = "Unclassified"
 			}
 		case *ast.FuncDecl:
-			info.DeclType = "func"
-			info.Name = decl.Name.Name
+			if decl.Recv == nil {
+				info.DeclType = "Function"
+			} else {
+				info.DeclType = "Method"
+			}
+			info.Name = nameOf(decl)
 		default:
-			info.DeclType = "OtherDecl"
+			info.DeclType = "Unclassified"
 		}
 
 		fmt.Printf("%s,%d,%d,%s\n",
 			info.DeclType, info.StartLine, info.EndLine, info.Name)
 	}
+}
+
+func nameOf(f *ast.FuncDecl) string {
+	if r := f.Recv; r != nil && len(r.List) == 1 {
+		// looks like a correct receiver declaration
+		t := r.List[0].Type
+		// dereference pointer receiver types
+		if p, _ := t.(*ast.StarExpr); p != nil {
+			t = p.X
+		}
+		// the receiver type must be a type name
+		if p, _ := t.(*ast.Ident); p != nil {
+			return p.Name + "." + f.Name.Name
+		}
+		// otherwise assume a function instead
+	}
+	return f.Name.Name
 }

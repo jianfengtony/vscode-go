@@ -68,7 +68,7 @@ import { GoDocumentSelector } from '../goMode';
 import { COMMAND as GOPLS_ADD_TEST_COMMAND } from '../goGenerateTests';
 import { COMMAND as GOPLS_MODIFY_TAGS_COMMAND } from '../goModifytags';
 import { TelemetryKey, telemetryReporter } from '../goTelemetry';
-import { TReferenceFeature } from './tReference';
+import { TReferenceFeature } from './tReferences/feature';
 
 export interface LanguageServerConfig {
 	serverName: string;

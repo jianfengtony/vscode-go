@@ -76,7 +76,7 @@ import { GoTaskProvider } from './goTaskProvider';
 import { setTelemetryEnvVars, activationLatency, telemetryReporter } from './goTelemetry';
 import { experiments } from './experimental';
 import { allToolsInformation } from './goToolsInformation';
-import { TTreeProvider } from './language/tReference';
+import { TTreeProvider } from './language/tReferences/feature';
 
 const goCtx: GoExtensionContext = {};
 
