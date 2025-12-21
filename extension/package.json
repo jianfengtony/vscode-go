@@ -3686,6 +3686,11 @@
       ],
       "editor/context": [
         {
+          "when": "editorTextFocus && config.go.editorContextMenuCommands.findAllReferences && resourceLangId == go",
+          "command": "go.findAllReferences.findAll",
+          "group": "Go group 0"
+        },
+        {
           "when": "editorTextFocus && config.go.editorContextMenuCommands.toggleTestFile && resourceLangId == go",
           "command": "go.toggle.test.file",
           "group": "Go group 1"
@@ -3743,11 +3748,6 @@
         {
           "when": "editorTextFocus && config.go.editorContextMenuCommands.generateTestForPackage && resourceLangId == go",
           "command": "go.test.generate.package",
-          "group": "Go group 1"
-        },
-        {
-          "when": "editorTextFocus && config.go.editorContextMenuCommands.findAllReferences && resourceLangId == go",
-          "command": "go.findAllReferences.findAll",
           "group": "Go group 1"
         },
         {

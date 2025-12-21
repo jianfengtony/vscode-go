@@ -545,7 +545,7 @@ export function computeTestCommand(
 	addJSONFlag: boolean | undefined; // true if we add extra -json flag for stream processing.
 } {
 	// By default, enable full path mode to address golang/vscode-go#3853.
-	const args: Array<string> = ['test', '-test.fullpath=true'];
+	const args: Array<string> = ['test'];
 	// user-specified flags
 	const argsFlagIdx = testconfig.flags?.indexOf('-args') ?? -1;
 	const userFlags = argsFlagIdx < 0 ? testconfig.flags : testconfig.flags.slice(0, argsFlagIdx);
