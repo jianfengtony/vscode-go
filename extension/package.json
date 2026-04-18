@@ -395,6 +395,12 @@
         "description": "Toggle the display of vulnerability analysis in dependencies."
       },
       {
+        "command": "go.findAllReferences.refresh",
+        "title": "Refresh",
+        "description": "Refresh the Find All References view",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "go.findAllReferences.expandAll",
         "title": "Expand All",
         "description": "Expand all nodes in the Find All References view",
@@ -3800,9 +3806,14 @@
           "group": "navigation"
         },
         {
+          "command": "go.findAllReferences.refresh",
+          "when": "view == go.findAllReferences",
+          "group": "navigation@1"
+        },
+        {
           "command": "go.findAllReferences.expandAll",
           "when": "view == go.findAllReferences",
-          "group": "navigation"
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [

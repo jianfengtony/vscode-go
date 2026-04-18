@@ -96,6 +96,9 @@ export namespace TTreeView {
 		showCollapseAll: true
 	});
 
+	let lastDocument: vscode.TextDocument | undefined;
+	let lastPosition: vscode.Position | undefined;
+
 	export function setup(ctx: vscode.ExtensionContext, client?: LanguageClient) {
 		GoParser.init();
 		// client?.registerFeature(new TReferenceFeature(client));
@@ -109,6 +112,10 @@ export namespace TTreeView {
 		ctx.subscriptions.push(
 			vscode.commands.registerCommand('go.findAllReferences.findAll',
 				() => findAllReferences(client))
+		);
+		ctx.subscriptions.push(
+			vscode.commands.registerCommand('go.findAllReferences.refresh',
+				() => refreshReferences(client))
 		);
 		ctx.subscriptions.push(
 			vscode.workspace.onDidSaveTextDocument(GoParser.fileChanged)
@@ -128,6 +135,10 @@ export namespace TTreeView {
 		}
 		const document = editor.document;
 		const position = editor.selection.active;
+
+		lastDocument = document;
+		lastPosition = position;
+
 		const options = { includeDeclaration: true };
 		const token = { isCancellationRequested: false } as CancellationToken;
 
@@ -178,5 +189,49 @@ export namespace TTreeView {
 				expandAllElements(element.getChildren());
 			}
 		});
+	}
+
+	function refreshReferences(client?: LanguageClient) {
+		if (!client) {
+			vscode.window.showWarningMessage('Language client is not available.');
+			return;
+		}
+
+		if (!lastDocument || !lastPosition) {
+			vscode.window.showInformationMessage('No previous references query found. Please run "Find All References" first.');
+			return;
+		}
+
+		const document = lastDocument;
+		const position = lastPosition;
+		const options = { includeDeclaration: true };
+		const token = { isCancellationRequested: false } as CancellationToken;
+
+		const params = client.code2ProtocolConverter.asReferenceParams(document, position, options);
+		client.sendRequest(ReferencesRequest.type, params, token)
+			.then((result) => {
+				if (token.isCancellationRequested) {
+					return null;
+				}
+				client.protocol2CodeConverter.asReferences(result, token)
+					.then(locations => {
+						if (!locations || locations.length === 0) {
+							vscode.window.showInformationMessage('No references found.');
+							return;
+						}
+						TTreeView.provider.refresh(locations);
+
+						setTimeout(() => {
+							if (TTreeView.provider.elements.length > 0) {
+								TTreeView.treeView.reveal(TTreeView.provider.elements[0], {
+									expand: true,
+									select: true
+								});
+							}
+						}, 50);
+					});
+			}, (error) => {
+				return client.handleFailedRequest(ReferencesRequest.type, token, error, null);
+			});
 	}
 }
