@@ -118,13 +118,13 @@ export class TreeContainer extends vscode.TreeItem {
 		container.parent = this;
 		switch (type) {
 			case "Function":
-				container.iconPath = new vscode.ThemeIcon('symbol-function');
+				container.iconPath = new vscode.ThemeIcon('symbol-function', new vscode.ThemeColor('symbolIcon.functionForeground'));
 				break;
 			case "Method":
-				container.iconPath = new vscode.ThemeIcon('symbol-method');
+				container.iconPath = new vscode.ThemeIcon('symbol-method', new vscode.ThemeColor('symbolIcon.methodForeground'));
 				break;
 			case "Type":
-				container.iconPath = new vscode.ThemeIcon('symbol-structure');
+				container.iconPath = new vscode.ThemeIcon('symbol-structure', new vscode.ThemeColor('symbolIcon.typeForeground'));
 				break;
 			default:
 				break;
