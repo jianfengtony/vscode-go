@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { GoParser } from './goparser';
 import path from 'path';
 
-export const itemClickCommand = 'go.RefencesItemClick';
+export const itemClickCommand = 'go.ReferencesItemClick';
 
 const mediaPath = vscode.extensions.getExtension('golang.go')!.extensionPath + '/media/';
 
@@ -173,7 +173,7 @@ export class TreeContainer extends vscode.TreeItem {
 	}
 
 	static newTypeContainer(): TreeContainer {
-		return new TreeContainer("Usage in type defination")
+		return new TreeContainer("Usage in type definition")
 	}
 
 	static newImportContainer(): TreeContainer {

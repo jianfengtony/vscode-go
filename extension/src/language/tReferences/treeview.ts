@@ -139,8 +139,21 @@ export namespace TTreeView {
 				}
 				client.protocol2CodeConverter.asReferences(result, token)
 					.then(locations => {
+						if (!locations || locations.length === 0) {
+							vscode.window.showInformationMessage('No references found.');
+							return;
+						}
 						TTreeView.provider.refresh(locations)
 						vscode.commands.executeCommand('setContext', 'go.showAllReferences', true);
+
+						setTimeout(() => {
+							if (TTreeView.provider.elements.length > 0) {
+								TTreeView.treeView.reveal(TTreeView.provider.elements[0], {
+									expand: true,
+									select: true
+								});
+							}
+						}, 50);
 					});
 			}, (error) => {
 				return client.handleFailedRequest(ReferencesRequest.type, token, error, null);
