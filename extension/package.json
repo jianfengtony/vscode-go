@@ -407,6 +407,21 @@
         "icon": "$(expand-all)"
       },
       {
+        "command": "go.findAllReferences.filterProduct",
+        "title": "Product",
+        "description": "Show product file references only"
+      },
+      {
+        "command": "go.findAllReferences.filterTest",
+        "title": "Test",
+        "description": "Show test file references only"
+      },
+      {
+        "command": "go.findAllReferences.filterAll",
+        "title": "All",
+        "description": "Show all references"
+      },
+      {
         "command": "go.languageserver.maintain",
         "title": "Go: Start language server's maintainer interface",
         "description": "Start the Go language server's maintainer interface (a web server)."
@@ -1813,6 +1828,12 @@
               "type": "boolean",
               "default": true,
               "description": "If true, adds command to find all references to the editor context menu"
+            },
+            "findAllReferencesInclude": {
+              "type": "string",
+              "enum": ["all", "product", "test"],
+              "default": "product",
+              "description": "Filter references: show all, product files only, or test files only"
             },
             "addImport": {
               "type": "boolean",
@@ -3811,9 +3832,31 @@
           "group": "navigation@1"
         },
         {
-          "command": "go.findAllReferences.expandAll",
+          "submenu": "go.findAllReferences.filterMenu",
           "when": "view == go.findAllReferences",
           "group": "navigation@2"
+        },
+        {
+          "command": "go.findAllReferences.expandAll",
+          "when": "view == go.findAllReferences",
+          "group": "navigation@3"
+        }
+      ],
+      "go.findAllReferences.filterMenu": [
+        {
+          "command": "go.findAllReferences.filterProduct",
+          "when": "view == go.findAllReferences",
+          "checked": "go.refFilterProduct"
+        },
+        {
+          "command": "go.findAllReferences.filterTest",
+          "when": "view == go.findAllReferences",
+          "checked": "go.refFilterTest"
+        },
+        {
+          "command": "go.findAllReferences.filterAll",
+          "when": "view == go.findAllReferences",
+          "checked": "go.refFilterAll"
         }
       ],
       "view/item/context": [
@@ -3915,6 +3958,13 @@
             }
           }
         }
+      }
+    ],
+    "submenus": [
+      {
+        "id": "go.findAllReferences.filterMenu",
+        "label": "Filter",
+        "icon": "$(filter)"
       }
     ]
   }

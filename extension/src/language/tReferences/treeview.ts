@@ -7,6 +7,8 @@ import { GoParser } from './goparser';
 import { itemClickCommand, TreeContainer, TreeLeaf } from './model';
 import { LanguageClient } from 'vscode-languageclient/node';
 
+const REF_FILTER_CONFIG_KEY = 'findAllReferencesInclude';
+
 export class TReferenceFeature extends ReferencesFeature {
 	public constructor(client: FeatureClient<ReferencesMiddleware>) {
 		super(client);
@@ -98,10 +100,38 @@ export namespace TTreeView {
 
 	let lastDocument: vscode.TextDocument | undefined;
 	let lastPosition: vscode.Position | undefined;
+	let lastLocations: vscode.Location[] | undefined;
+
+	function getRefFilterConfig(): string {
+		const config = vscode.workspace.getConfiguration('go');
+		return config.get<string>(REF_FILTER_CONFIG_KEY, 'product');
+	}
+
+	function isTestFile(uri: vscode.Uri): boolean {
+		return uri.fsPath.endsWith('_test.go');
+	}
+
+	function updateFilterContext(filter?: string) {
+		const currentFilter = filter || getRefFilterConfig();
+		vscode.commands.executeCommand('setContext', 'go.refFilterProduct', currentFilter === 'product');
+		vscode.commands.executeCommand('setContext', 'go.refFilterTest', currentFilter === 'test');
+		vscode.commands.executeCommand('setContext', 'go.refFilterAll', currentFilter === 'all');
+	}
+
+	function applyFilterAndRefresh(locations: vscode.Location[], filter?: string) {
+		lastLocations = locations;
+		const currentFilter = filter || getRefFilterConfig();
+		const filtered = locations.filter(loc => {
+			const isTest = isTestFile(loc.uri);
+			if (currentFilter === 'all') return true;
+			return currentFilter === 'test' ? isTest : !isTest;
+		});
+		TTreeView.provider.refresh(filtered);
+		updateFilterContext(currentFilter);
+	}
 
 	export function setup(ctx: vscode.ExtensionContext, client?: LanguageClient) {
 		GoParser.init();
-		// client?.registerFeature(new TReferenceFeature(client));
 		ctx.subscriptions.push(
 			vscode.commands.registerCommand(itemClickCommand, openDocument)
 		);
@@ -116,6 +146,30 @@ export namespace TTreeView {
 		ctx.subscriptions.push(
 			vscode.commands.registerCommand('go.findAllReferences.refresh',
 				() => refreshReferences(client))
+		);
+		ctx.subscriptions.push(
+			vscode.commands.registerCommand('go.findAllReferences.filterProduct',
+				() => {
+					if (lastLocations) {
+						applyFilterAndRefresh(lastLocations, 'product');
+					}
+				})
+		);
+		ctx.subscriptions.push(
+			vscode.commands.registerCommand('go.findAllReferences.filterTest',
+				() => {
+					if (lastLocations) {
+						applyFilterAndRefresh(lastLocations, 'test');
+					}
+				})
+		);
+		ctx.subscriptions.push(
+			vscode.commands.registerCommand('go.findAllReferences.filterAll',
+				() => {
+					if (lastLocations) {
+						applyFilterAndRefresh(lastLocations, 'all');
+					}
+				})
 		);
 		ctx.subscriptions.push(
 			vscode.workspace.onDidSaveTextDocument(GoParser.fileChanged)
@@ -154,7 +208,8 @@ export namespace TTreeView {
 							vscode.window.showInformationMessage('No references found.');
 							return;
 						}
-						TTreeView.provider.refresh(locations)
+						lastLocations = locations;
+						applyFilterAndRefresh(locations);
 						vscode.commands.executeCommand('setContext', 'go.showAllReferences', true);
 
 						setTimeout(() => {
@@ -219,16 +274,8 @@ export namespace TTreeView {
 							vscode.window.showInformationMessage('No references found.');
 							return;
 						}
-						TTreeView.provider.refresh(locations);
-
-						setTimeout(() => {
-							if (TTreeView.provider.elements.length > 0) {
-								TTreeView.treeView.reveal(TTreeView.provider.elements[0], {
-									expand: true,
-									select: true
-								});
-							}
-						}, 50);
+						lastLocations = locations;
+						applyFilterAndRefresh(locations);
 					});
 			}, (error) => {
 				return client.handleFailedRequest(ReferencesRequest.type, token, error, null);
