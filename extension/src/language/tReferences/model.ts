@@ -8,22 +8,27 @@ const mediaPath = vscode.extensions.getExtension('golang.go')!.extensionPath + '
 
 export class TreeLeaf extends vscode.TreeItem {
 	private location: vscode.Location
+	private resolved: boolean = false
 	parent: TreeContainer | null = null;
 
-	constructor(location: vscode.Location) {
-		let label = `line: ${location.range.start.line + 1}:${location.range.start.character + 1}`;
-		super(label, vscode.TreeItemCollapsibleState.None)
+	constructor(location: vscode.Location, rawLine?: string) {
+		super('', vscode.TreeItemCollapsibleState.None)
 		this.location = location
 		this.command = {
 			command: itemClickCommand,
 			title: 'Item Click',
 			arguments: [location]
 		}
+		
+		if (rawLine !== undefined) {
+			this.setLabelFromRawLine(rawLine)
+			this.resolved = true
+		} else {
+			this.label = `line: ${location.range.start.line + 1}:${location.range.start.character + 1}`
+		}
 	}
 
-	public async resolve(): Promise<TreeLeaf> {
-		const doc = await vscode.workspace.openTextDocument(this.location.uri);
-		const rawLine = doc.lineAt(this.location.range.start.line).text;
+	private setLabelFromRawLine(rawLine: string) {
 		const trimmedStart = rawLine.trimStart();
 		const leading = rawLine.length - trimmedStart.length;
 		const start = this.location.range.start.character - leading;
@@ -33,7 +38,17 @@ export class TreeLeaf extends vscode.TreeItem {
 			label: lineN + trimmedStart.trimEnd(),
 			highlights: [[start + lineN.length, end + lineN.length]]
 		} as vscode.TreeItemLabel;
-		return this;
+	}
+
+	public async resolve(): Promise<TreeLeaf> {
+		if (this.resolved) {
+			return this
+		}
+		const doc = await vscode.workspace.openTextDocument(this.location.uri);
+		const rawLine = doc.lineAt(this.location.range.start.line).text;
+		this.setLabelFromRawLine(rawLine)
+		this.resolved = true
+		return this
 	}
 }
 
@@ -133,34 +148,34 @@ export class TreeContainer extends vscode.TreeItem {
 		return container
 	}
 
-	private addDecl(loc: vscode.Location) {
+	private addDecl(loc: vscode.Location, rawLine?: string) {
 		let dir = this.getOrCreateDirContainer(loc)
 		let file = dir.getOrCreateFileContainer(loc)
-		file.addLeaf(loc)
+		file.addLeaf(loc, rawLine)
 	}
 
-	private addRef(scope: string, loc: vscode.Location) {
+	private addRef(scope: string, loc: vscode.Location, rawLine?: string) {
 		let dir = this.getOrCreateDirContainer(loc)
 		let file = dir.getOrCreateFileContainer(loc)
 		let container = file.getOrCreateScopeContainer(scope)
-		container.addLeaf(loc)
+		container.addLeaf(loc, rawLine)
 	}
 
-	private addImport(loc: vscode.Location) {
+	private addImport(loc: vscode.Location, rawLine?: string) {
 		let dir = this.getOrCreateDirContainer(loc)
 		let file = dir.getOrCreateFileContainer(loc)
-		file.addLeaf(loc)
+		file.addLeaf(loc, rawLine)
 	}
 
-	private addUnclassified(loc: vscode.Location) {
+	private addUnclassified(loc: vscode.Location, rawLine?: string) {
 		let dir = this.getOrCreateDirContainer(loc)
 		let file = dir.getOrCreateFileContainer(loc)
-		file.addLeaf(loc)
+		file.addLeaf(loc, rawLine)
 	}
 
-	private addLeaf(loc: vscode.Location) {
-		let leaf = new TreeLeaf(loc)
-		leaf.parent = this;
+	private addLeaf(loc: vscode.Location, rawLine?: string) {
+		let leaf = new TreeLeaf(loc, rawLine)
+		leaf.parent = this
 		this.children.push(leaf)
 	}
 
@@ -180,47 +195,53 @@ export class TreeContainer extends vscode.TreeItem {
 		return new TreeContainer("Usage in imports")
 	}
 
-	static buildRoots(locations: vscode.Location[]): TreeContainer[] {
+	static async buildRoots(locations: vscode.Location[]): Promise<TreeContainer[]> {
 		let declContainer = this.newDeclarationContainer()
 		let funcContainer = this.newFunctionContainer()
 		let typeContainer = this.newTypeContainer()
 		let importContainer = this.newImportContainer()
 		let unclassifiedContainer = new TreeContainer()
 
-		locations.forEach((loc, index) => {
-			let srcInfo = GoParser.getSrcInfo(loc.uri.fsPath)
+		const prepData = await Promise.all(locations.map(async (loc) => {
+			const doc = await vscode.workspace.openTextDocument(loc.uri)
+			const rawLine = doc.lineAt(loc.range.start.line).text
+			const srcInfo = GoParser.getSrcInfo(loc.uri.fsPath)
+			return { loc, rawLine, srcInfo }
+		}))
+
+		prepData.forEach(({ loc, rawLine, srcInfo }, index) => {
 			if (!srcInfo) {
-				unclassifiedContainer.addUnclassified(loc)
+				unclassifiedContainer.addUnclassified(loc, rawLine)
 				return
 			}
-			let decl = srcInfo.queryDecl(loc.range.start.line)
+			const decl = srcInfo.queryDecl(loc.range.start.line)
 
 			if (index === 0 && loc.range.start.line === decl?.start) {
-				declContainer.addDecl(loc)
+				declContainer.addDecl(loc, rawLine)
 				return
 			}
 
 			if (decl != undefined) {
 				switch (decl.type) {
 					case "Function":
-						funcContainer.addRef(decl.getDescription(), loc)
-						return;
+						funcContainer.addRef(decl.getDescription(), loc, rawLine)
+						return
 					case "Method":
-						funcContainer.addRef(decl.getDescription(), loc)
-						return;
+						funcContainer.addRef(decl.getDescription(), loc, rawLine)
+						return
 					case "Import":
-						importContainer.addImport(loc)
-						return;
+						importContainer.addImport(loc, rawLine)
+						return
 					case "Type":
-						typeContainer.addRef(decl.getDescription(), loc)
-						return;
+						typeContainer.addRef(decl.getDescription(), loc, rawLine)
+						return
 				}
 			}
 
-			unclassifiedContainer.addUnclassified(loc)
+			unclassifiedContainer.addUnclassified(loc, rawLine)
 		})
 
 		return [declContainer, funcContainer, typeContainer, importContainer, unclassifiedContainer]
-			.filter(item => item.children.length > 0);
+			.filter(item => item.children.length > 0)
 	}
 }

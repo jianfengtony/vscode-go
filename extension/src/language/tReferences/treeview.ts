@@ -71,23 +71,17 @@ export class TTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 		return null;
 	}
 
-	getTreeItem(element: vscode.TreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
-		if (element instanceof TreeContainer) {
-			return element.resolve()
-		} else if (element instanceof TreeLeaf) {
-			return element.resolve()
-		} else {
-			return element
-		}
+	getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+		return element
 	}
 
-	refresh(locations: vscode.Location[] | undefined): void {
+	async refresh(locations: vscode.Location[] | undefined): Promise<void> {
 		if (locations != undefined) {
-			this.elements = TreeContainer.buildRoots(locations)
+			this.elements = await TreeContainer.buildRoots(locations)
 		} else {
 			this.elements = []
 		}
-		this._onDidChangeTreeData.fire();
+		this._onDidChangeTreeData.fire()
 	}
 }
 
@@ -118,7 +112,7 @@ export namespace TTreeView {
 		vscode.commands.executeCommand('setContext', 'go.refFilterAll', currentFilter === 'all');
 	}
 
-	function applyFilterAndRefresh(locations: vscode.Location[], filter?: string) {
+	function applyFilterAndRefresh(locations: vscode.Location[], filter?: string): Promise<void> {
 		lastLocations = locations;
 		const currentFilter = filter || getRefFilterConfig();
 		const filtered = locations.filter(loc => {
@@ -126,8 +120,9 @@ export namespace TTreeView {
 			if (currentFilter === 'all') return true;
 			return currentFilter === 'test' ? isTest : !isTest;
 		});
-		TTreeView.provider.refresh(filtered);
-		updateFilterContext(currentFilter);
+		return TTreeView.provider.refresh(filtered).then(() => {
+			updateFilterContext(currentFilter);
+		});
 	}
 
 	export function setup(ctx: vscode.ExtensionContext, client?: LanguageClient) {
@@ -209,17 +204,16 @@ export namespace TTreeView {
 							return;
 						}
 						lastLocations = locations;
-						applyFilterAndRefresh(locations);
-						vscode.commands.executeCommand('setContext', 'go.showAllReferences', true);
+						applyFilterAndRefresh(locations).then(() => {
+							vscode.commands.executeCommand('setContext', 'go.showAllReferences', true);
 
-						setTimeout(() => {
 							if (TTreeView.provider.elements.length > 0) {
 								TTreeView.treeView.reveal(TTreeView.provider.elements[0], {
 									expand: true,
 									select: true
 								});
 							}
-						}, 50);
+						});
 					});
 			}, (error) => {
 				return client.handleFailedRequest(ReferencesRequest.type, token, error, null);
