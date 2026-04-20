@@ -122,6 +122,12 @@ export namespace TTreeView {
 		});
 		return TTreeView.provider.refresh(filtered).then(() => {
 			updateFilterContext(currentFilter);
+			const filterMessages: Record<string, string> = {
+				'product': 'Showing: Product files only',
+				'test': 'Showing: Test files only',
+				'all': 'Showing: All references'
+			};
+			TTreeView.treeView.message = filterMessages[currentFilter] || undefined;
 		});
 	}
 
@@ -201,6 +207,7 @@ export namespace TTreeView {
 					.then(locations => {
 						if (!locations || locations.length === 0) {
 							vscode.window.showInformationMessage('No references found.');
+							TTreeView.treeView.message = undefined;
 							return;
 						}
 						lastLocations = locations;
@@ -216,6 +223,7 @@ export namespace TTreeView {
 						});
 					});
 			}, (error) => {
+				TTreeView.treeView.message = undefined;
 				return client.handleFailedRequest(ReferencesRequest.type, token, error, null);
 			});
 	}
@@ -266,12 +274,14 @@ export namespace TTreeView {
 					.then(locations => {
 						if (!locations || locations.length === 0) {
 							vscode.window.showInformationMessage('No references found.');
+							TTreeView.treeView.message = undefined;
 							return;
 						}
 						lastLocations = locations;
 						applyFilterAndRefresh(locations);
 					});
 			}, (error) => {
+				TTreeView.treeView.message = undefined;
 				return client.handleFailedRequest(ReferencesRequest.type, token, error, null);
 			});
 	}
