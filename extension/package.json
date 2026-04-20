@@ -3845,18 +3845,15 @@
       "go.findAllReferences.filterMenu": [
         {
           "command": "go.findAllReferences.filterProduct",
-          "when": "view == go.findAllReferences",
-          "checked": "go.refFilterProduct"
+          "when": "view == go.findAllReferences"
         },
         {
           "command": "go.findAllReferences.filterTest",
-          "when": "view == go.findAllReferences",
-          "checked": "go.refFilterTest"
+          "when": "view == go.findAllReferences"
         },
         {
           "command": "go.findAllReferences.filterAll",
-          "when": "view == go.findAllReferences",
-          "checked": "go.refFilterAll"
+          "when": "view == go.findAllReferences"
         }
       ],
       "view/item/context": [

@@ -105,13 +105,6 @@ export namespace TTreeView {
 		return uri.fsPath.endsWith('_test.go');
 	}
 
-	function updateFilterContext(filter?: string) {
-		const currentFilter = filter || getRefFilterConfig();
-		vscode.commands.executeCommand('setContext', 'go.refFilterProduct', currentFilter === 'product');
-		vscode.commands.executeCommand('setContext', 'go.refFilterTest', currentFilter === 'test');
-		vscode.commands.executeCommand('setContext', 'go.refFilterAll', currentFilter === 'all');
-	}
-
 	function applyFilterAndRefresh(locations: vscode.Location[], filter?: string): Promise<void> {
 		lastLocations = locations;
 		const currentFilter = filter || getRefFilterConfig();
@@ -121,7 +114,6 @@ export namespace TTreeView {
 			return currentFilter === 'test' ? isTest : !isTest;
 		});
 		return TTreeView.provider.refresh(filtered).then(() => {
-			updateFilterContext(currentFilter);
 			const filterMessages: Record<string, string> = {
 				'product': 'Showing: Product files only',
 				'test': 'Showing: Test files only',
