@@ -72,7 +72,11 @@ export class TTreeProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 	}
 
 	getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
-		return element
+		if (element instanceof TreeContainer) {
+			return element.resolve()
+		} else {
+			return element
+		}
 	}
 
 	async refresh(locations: vscode.Location[] | undefined): Promise<void> {
